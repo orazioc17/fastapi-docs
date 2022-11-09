@@ -1,24 +1,7 @@
-from enum import Enum
-
 from fastapi import FastAPI
 
-
-# By inheriting from str the API docs will be able to know that the values must be of 
-# type string and will be able to render correctly.
-class ModelName(str, Enum):
-    # These are machine learning models names
-    alexnet = "alexnet"
-    resnet = "resnet"
-    lenet = "lenet"
-
-
-class Tags(str, Enum):
-    """
-    Enum for tags of documentation on the url handlers
-    """
-    first_steps = "First Steps"
-    path_parameters = "Path Parameters"
-    query_parameters = "Query Parameters"
+from enums import ModelName, Tags
+from models import Item
 
 
 app = FastAPI()  # Lanzar la app con el comando: uvicorn main:app --reload
@@ -114,3 +97,27 @@ async def required_query_parameters(needy: str):
     Requiring a query parameter, to do that, we just don't add a default value to the query parameter
     """    
     return { "needy": needy }
+
+
+# Request body section
+@app.post("/items", tags=[Tags.request_body])
+async def create_item(item: Item): # We have to include the request body the same way we declared path and query parameters
+    """
+    With just that Python type declaration (Item), FastAPI will:
+
+    * Read the body of the request as JSON.
+    * Convert the corresponding types (if needed).
+    * Validate the data.
+    * If the data is invalid, it will return a nice and clear error, indicating exactly where and what was the incorrect data.
+    * Give you the received data in the parameter item.
+    * As you declared it in the function to be of type Item, you will also have all the editor support (completion, etc) for all of the attributes and their types.
+    * Generate JSON Schema definitions for your model, you can also use them anywhere else you like if it makes sense for your project.
+    * Those schemas will be part of the generated OpenAPI schema, and used by the automatic documentation UIs.
+    """
+    
+    item_dict = item.dict()
+    if item.tax:
+        price_with_tax = item.price + item.tax
+        item_dict.update({"price_with_tag": price_with_tax})
+    
+    return item_dict
