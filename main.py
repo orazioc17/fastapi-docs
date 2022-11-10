@@ -1,4 +1,7 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Query
+from pydantic import Required
+
+from typing import List
 
 from enums import ModelName, Tags
 from models import Item
@@ -68,7 +71,7 @@ async def optional_query(item_id: str, q: str | None = None):
 # Query parameter type converter
 @app.get("/another/items/{item_id}", tags=[Tags.query_parameters.value])
 async def type_converter(item_id: str, q: str | None = None, short: bool = False):
-    """
+    """ 
     Here a bool type will be converted by FastApi
 
     In this case, if you go to one of the following url:
@@ -91,7 +94,6 @@ async def type_converter(item_id: str, q: str | None = None, short: bool = False
 
 
 @app.get("/required/query/parameter", tags=[Tags.query_parameters])
-
 async def required_query_parameters(needy: str):
     """
     Requiring a query parameter, to do that, we just don't add a default value to the query parameter
@@ -121,3 +123,80 @@ async def create_item(item: Item): # We have to include the request body the sam
         item_dict.update({"price_with_tag": price_with_tax})
     
     return item_dict
+
+
+# Query Parameters and String Validations
+@app.get("/read-items/", tags=[Tags.query_parameters, Tags.validations])
+async def read_items(
+    q: str | None = Query(default=None, min_length=3, max_length=50)):  # We could also use another thing as default and it will still be optional
+    # If we don't use default value, it will be REQUIRED
+    """
+    # Additional validation
+    We are going to enforce that even though q is optional, whenever it is provided, its length doesn't exceed 50 characters. It's automated by pydantic validations using Query from FastAPI
+    """
+    results = {"items": [{"item_id": "Foo"}, {"item_id": "Bar"}]}
+    if q:
+        results.update({"q": q})
+    
+    return results
+
+
+@app.get("/read-items-2/", tags=[Tags.query_parameters, Tags.validations])
+async def read_items_2(
+    q: str = Query(default=..., min_length=3, max_length=50)):  # We could make the query parameter required just by not give it a default value or default=...  
+    # ... is called ellipsis in python and is used by FastAPI and Pydantic to explicitly declare that a value is required
+    """
+    Declaring a query parameter as required with ellipsis
+    """
+    results = {"items": [{"item_id": "Foo"}, {"item_id": "Bar"}]}
+    if q:
+        results.update({"q": q})
+    
+    return results
+
+
+@app.get("/read-items-3/", tags=[Tags.query_parameters, Tags.validations])
+async def read_items_3(
+    q: str | None = Query(default=Required, min_length=3, max_length=50)):  # We could even use Pydantic's Required to explicitly requiring a parameter without using ...  
+    """
+    # Required with None
+    You can declare that a parameter can accept None, but that it's still required. This would force clients to send a value, even if the value is None.
+    To do that, you can declare that None is a valid type but still use default=...
+    """
+    results = {"items": [{"item_id": "Foo"}, {"item_id": "Bar"}]}
+    if q:
+        results.update({"q": q})
+    
+    return results
+
+
+@app.get("/read-items-4/", tags=[Tags.query_parameters, Tags.validations])
+async def read_items_4(
+    q: List[str] | None = Query(
+        default=None,
+        title="Query string",
+        description="This is a query string and I am using more information about the parameter to show on docs"
+    )
+):
+    # We could even define a default list if the query parameter is None, like Query(default=["Foo", "Bar"])
+    """
+    # Query parameter list / multiple values
+    When you define a query parameter explicitly with Query you can also declare it to receive a list of values, or said in other way, to receive multiple values.
+
+    For example, to declare a query parameter q that can appear multiple times in the URL, you can use what is used in this function
+    
+    url example: http://localhost:8000/items/?q=foo&q=bar
+    It's return: 
+    {
+        "q": [
+            "foo",
+            "bar"
+        ]
+    }
+    To declare a query parameter with a type of list, like in the example above, you need to explicitly use Query, otherwise it would be interpreted as a request body.
+    """
+    query_items = {"q": q}
+    
+    # This will receive the multiple q query parameter's values in a python list inside the path operation function, in the function parameter q
+
+    return query_items

@@ -17,3 +17,4 @@ class Tags(str, Enum):
     path_parameters = "Path Parameters"
     query_parameters = "Query Parameters"
     request_body = "Request Body"
+    validations = "Validations"
