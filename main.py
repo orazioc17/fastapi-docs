@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, Path
 from pydantic import Required
 
 from typing import List
@@ -200,3 +200,35 @@ async def read_items_4(
     # This will receive the multiple q query parameter's values in a python list inside the path operation function, in the function parameter q
 
     return query_items
+
+
+# Path Parameters and Numeric Validations
+# In the same way that you can declare more validations and metadata for query parameters with Query, you can declare the same type of validations and metadata for path parameters with Path.
+@app.get("/path-validation/{item_id}", tags=[Tags.path_parameters, Tags.validations])
+async def path_validation(
+    item_id: int = Path(title="The ID of the item to get"),
+    q: str | None = Query(default=None, alias="item-query", title="Tue optional query to get")
+):
+    results = {"item_id": item_id}
+    if q:
+        results.update({"q": q})
+    return results
+
+
+@app.get("/path-validation-2/{item_id}")
+async def path_validation_2(*, item_id: int = Path(title="The ID of the item to get"), q: str):
+    """
+    # Order the parameters as you need, tricks
+    If you want to declare the q query parameter without a Query nor any default value, and the path parameter item_id using Path, and have them in a different order, Python has a little special syntax for that.
+
+    Pass *, as the first parameter of the function.
+
+    Python won't do anything with that *, but it will know that all the following parameters should be called as keyword arguments (key-value pairs), also known as kwargs. Even if they don't have a default value.
+    
+    Otherwise, q would have to be ordered before item_id
+    """
+    
+    results = {"item_id": item_id}
+    if q:
+        results.update({"q": q})
+    return results
