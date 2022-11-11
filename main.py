@@ -215,7 +215,7 @@ async def path_validation(
     return results
 
 
-@app.get("/path-validation-2/{item_id}")
+@app.get("/path-validation-2/{item_id}", tags=[Tags.path_parameters, Tags.validations])
 async def path_validation_2(*, item_id: int = Path(title="The ID of the item to get"), q: str):
     """
     # Order the parameters as you need, tricks
